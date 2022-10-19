@@ -1,7 +1,17 @@
 #include <iostream>
 #include <regex>
+#include <list>
+#include <vector>
 
 using namespace std;
+
+bool find(vector<int> V, int key)
+{
+    for (int i = 0; i < V.size(); i++)
+        if(V[i] == key)
+            return true;
+    return false; 
+}
 
 int erro(string err = "")
 {
@@ -11,8 +21,16 @@ int erro(string err = "")
 
 int main(int argc, char const *argv[])
 {
+
+    if (argc < 2)
+        return 1;
+    const char *filename = argv[1];
+    FILE *prog = fopen(filename, "r");
+    if (!prog)
+        return erro("Erro ao abrir arquivo!");
+    
     regex outro("(.*)");
-    regex quebras_espacos("\\n|\\t|\\s");
+    regex quebras_espacos("(\\n|\\t|\\s)+");
     regex comment("#(.*)#");
     regex digito("[0-9]");
     regex letra("[[:alpha:]]");
@@ -31,27 +49,30 @@ int main(int argc, char const *argv[])
     regex op_atrib("=");
     regex op_log("!|(&&)|(\\|\\|)");
 
-    if (argc < 2)
-        return 1;
-    const char *filename = argv[1];
-    FILE *prog = fopen(filename, "r");
-    if (!prog)
-    {
-        cout << "Erro ao abrir arquivo!\n";
-        return 0;
-    }
-
     int estado = 0;
     int test ;
     char c;
     string aux;
-    while (true)
+    string lexema;
+    // token e lexema
+    pair<string, string> tk;
+    list<pair<string, string>> tokens;
+    vector<int> finais = {27, 17, 16 ,15, 14 ,13, 11, 9 , 6 ,2, 20, 25, 26, 24};
+    while (!feof(prog))
     {
-        fread(&c, sizeof(char), 1, prog);
-        aux = &c;
-        
-        if (feof(prog))
-            break;
+        if(!find(finais, estado))
+        {
+            fread(&c, sizeof(char), 1, prog);
+            aux = string(1,c);
+            // cout <<  c ;
+        }
+        if(estado == 0)
+            lexema.clear();
+        if(!find(finais, estado))
+            lexema.append(aux);
+
+        // cout << "( "<< estado  << " + " << c << ")" << " , ";
+
         switch (estado)
         {
         case 0:
@@ -131,7 +152,9 @@ int main(int argc, char const *argv[])
         case 2:
         {
             //token comentario
-            cout << "comentario" << endl;
+            tk.first = lexema;
+            tk.second = "comment";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -145,12 +168,12 @@ int main(int argc, char const *argv[])
         }
         case 4:
         {
-            if(regex_match(aux,quebras_espacos) || c == ';')
+            if(regex_match(aux, quebras_espacos) || c == ';')
                 estado = 6;
             else if(regex_match(aux,letra) || regex_match(aux,digito))
                 estado = 4;
             else
-                return erro("Identificador inválido");
+                 erro("Identificador inválido");
             break;
         }
         case 5:
@@ -164,8 +187,9 @@ int main(int argc, char const *argv[])
         case 6:
         {
             //token id e reservadas
-            cout << "id e reservadas" << endl;
-            estado = 0;
+            tk.first = lexema;
+            tk.second = "id_reservadas";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -190,7 +214,9 @@ int main(int argc, char const *argv[])
         case 9:
         {
             // token op arit
-            cout << "op_arit" << endl;
+            tk.first = lexema;
+            tk.second = "op_arit";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -198,8 +224,8 @@ int main(int argc, char const *argv[])
         {
             if (c == ' ' || c == ';')
                 estado = 11;
-            else if (c == '.')
-                estado == 12;
+            else if (c = '.')
+                estado = 12;
             else
                 return erro("Número inválido");
             break;
@@ -207,7 +233,9 @@ int main(int argc, char const *argv[])
         case 11: 
         {
             // token inteiro
-            cout << "inteiro" << endl;
+            tk.first = lexema;
+            tk.second = "inteiro";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -222,34 +250,45 @@ int main(int argc, char const *argv[])
         case 13:
         {
             // token duplo
-            cout << "duplo" << endl;
+            tk.first = lexema;
+            tk.second = "duplo";
+            tokens.push_back(tk);
+            estado = 0;
             break;
         }
         case 14:
         {
             // token parent_fecha
-            cout << ")" << endl;
+            tk.first = lexema;
+            tk.second = "parent_fecha";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
         case 15:
         {
             // token parent_abre
-            cout << "(" << endl;
+            tk.first = lexema;
+            tk.second = "parent_abre";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
         case 16:
         {
             // token chave fecha
-            cout << "}" << endl;
+            tk.first = lexema;
+            tk.second = "chave_fecha";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
         case 17:
         {
             // token chave_abre
-            cout << "{" << endl;
+            tk.first = lexema;
+            tk.second = "chave_abre";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -263,16 +302,18 @@ int main(int argc, char const *argv[])
         }
         case 19:
         {
-            if(regex_match(aux,outro))
-                estado = 19;
-            else if(c == '"')
+            if(c == '"')
                 estado = 20;
+            else if(regex_match(aux,outro))
+                estado = 19;
             break;
         }
         case 20:
         {
             // token string
-            cout << "string" << endl;
+            tk.first = lexema;
+            tk.second = "string";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -306,28 +347,36 @@ int main(int argc, char const *argv[])
         case 24:
         {
             // token op_atrib
-            cout << "op_atrib" << endl;
+            tk.first = lexema;
+            tk.second = "op_atrib";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
         case 25:
         {
             // token op_log
-            cout << "op_log" << endl;
+            tk.first = lexema;
+            tk.second = "op_log";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
         case 26:
         {
             // token op_rel
-            cout << "op_rel" << endl;
+            tk.first = lexema;
+            tk.second = "op_rel";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
         case 27:
         {
             // token pt_virg
-            cout << "pt_virg" << endl;
+            tk.first = lexema;
+            tk.second = "pnt_virg";
+            tokens.push_back(tk);
             estado = 0;
             break;
         }
@@ -341,6 +390,11 @@ int main(int argc, char const *argv[])
         }
         }
     }
+    cout << "TOKENS E LEXEMAS" << endl;
+    int i = 0;
+    for(list<pair<string, string>>::iterator it = tokens.begin(); it != tokens.end(); it++)
+        cout << i++ << endl << "token : " << it->second << endl << "lexema : " << it->first << endl << endl; 
 
+    cout << endl;
     return 0;
 }
