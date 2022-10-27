@@ -23,7 +23,7 @@ int main(int argc, char const *argv[])
 {
 
     if (argc < 2)
-        return 1;
+        return erro("Insira o nome do arquivo na linha de comando!");
     const char *filename = argv[1];
     FILE *prog = fopen(filename, "r");
     if (!prog)
@@ -50,6 +50,7 @@ int main(int argc, char const *argv[])
     regex op_log("!|(&&)|(\\|\\|)");
 
     int estado = 0;
+    int line = 1;
     int test ;
     char c;
     string aux;
@@ -58,18 +59,28 @@ int main(int argc, char const *argv[])
     pair<string, string> tk;
     list<pair<string, string>> tokens;
     vector<int> finais = {27, 17, 16 ,15, 14 ,13, 11, 9 , 6 ,2, 20, 25, 26, 24};
+    
+    cout << "TOKENS E LEXEMAS" << endl;
+
     while (!feof(prog))
     {
         if(!find(finais, estado))
         {
             fread(&c, sizeof(char), 1, prog);
             aux = string(1,c);
+            if (c == '\n')
+                line++;
             // cout <<  c ;
         }
         if(estado == 0)
             lexema.clear();
+
         if(!find(finais, estado))
+        {
+            cout << "Linha: " << line <<  " token: " << tk.second << " lexema: " << tk.first << endl << endl; 
+            cout << endl;
             lexema.append(aux);
+        }
 
         // cout << "( "<< estado  << " + " << c << ")" << " , ";
 
@@ -89,7 +100,6 @@ int main(int argc, char const *argv[])
                 estado = 0;
             else
             {
-
                 switch (c)
                 {
                 case '#':
@@ -135,7 +145,8 @@ int main(int argc, char const *argv[])
                     estado = 28;
                     break;
                 default:
-                    erro();
+                    tk.first = lexema;
+                    tk.second = "ERRO: Caracter inválido";
                     break;
                 }
             }
@@ -163,7 +174,10 @@ int main(int argc, char const *argv[])
             if (regex_match(aux, letra))
                 estado = 4;
             else
-                return erro("Identificador inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Identificador inválido";
+            }
             break;
         }
         case 4:
@@ -173,7 +187,10 @@ int main(int argc, char const *argv[])
             else if(regex_match(aux,letra) || regex_match(aux,digito))
                 estado = 4;
             else
-                 erro("Identificador inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Identificador inválido";
+            }
             break;
         }
         case 5:
@@ -181,7 +198,10 @@ int main(int argc, char const *argv[])
             if(c == '&')
                 estado = 18;
             else
-                return erro("Operador lógico inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Operador inválido";
+            }
             break;
         }
         case 6:
@@ -198,7 +218,10 @@ int main(int argc, char const *argv[])
             if(c == ' ')
                 estado = 9;
             else
-                return erro("Uso de operador inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Uso de operador inválido";
+            }
             break;
         }
         case 8:
@@ -208,7 +231,10 @@ int main(int argc, char const *argv[])
             else if(regex_match(aux,digito))
                 estado = 10;
             else
-                return erro("Uso de operador inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Uso de operador inválido";
+            }
             break;
         }
         case 9:
@@ -227,7 +253,10 @@ int main(int argc, char const *argv[])
             else if (c = '.')
                 estado = 12;
             else
-                return erro("Número inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Número inválido";
+            }
             break;
         }
         case 11: 
@@ -297,7 +326,10 @@ int main(int argc, char const *argv[])
             if (c == ' ')
                 estado = 25;
             else 
-                return erro("Operador lógico inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Operador inválido";
+            }
             break;
         }
         case 19:
@@ -324,7 +356,10 @@ int main(int argc, char const *argv[])
             else if (c == ' ')
                 estado = 26;
             else
-                return erro("Operador relacional inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Operador inválido";
+            }
             break;
         }
         case 22:
@@ -334,8 +369,10 @@ int main(int argc, char const *argv[])
             else if (c == ' ')
                 estado = 24;
             else
-                return erro("Operador relacional inválido");
-
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Operador inválido";
+            }
             break;
         }
         case 23:
@@ -385,16 +422,13 @@ int main(int argc, char const *argv[])
             if(c == '|')
                 estado = 18;
             else
-                return erro("Operador lógico inválido");
+            {
+                tk.first = lexema;
+                tk.second = "ERRO: Operador inválido";
+            }
             break;
         }
         }
     }
-    cout << "TOKENS E LEXEMAS" << endl;
-    int i = 0;
-    for(list<pair<string, string>>::iterator it = tokens.begin(); it != tokens.end(); it++)
-        cout << i++ << endl << "token : " << it->second << endl << "lexema : " << it->first << endl << endl; 
-
-    cout << endl;
     return 0;
 }
